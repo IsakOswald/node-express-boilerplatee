@@ -102,5 +102,43 @@ pipeline {
                 '''
             }
         }
+
+        stage('Release') {
+            steps {
+                sh '''
+                    docker tag \
+                    node-express-boilerplatee:${BUILD_NUMBER} \
+                    node-express-boilerplatee:release-${BUILD_NUMBER}
+
+                    docker rm -f node-express-production 2>/dev/null || true
+
+                    docker run -d \
+                    --name node-express-production \
+                    --env-file .env.example \
+                    -e NODE_ENV=production \
+                    -p 5052:5050 \
+                    node-express-boilerplatee:release-${BUILD_NUMBER}
+                '''
+
+                sh '''
+                    echo "Waiting for production release..."
+
+                    for i in 1 2 3 4 5 6 7 8 9 10; do
+                        if curl --fail --silent \
+                        http://localhost:5052/api/v1/health/ready > /dev/null; then
+                            echo "Production release is healthy"
+                            exit 0
+                        fi
+
+                        echo "Attempt $i: production not ready yet"
+                        sleep 3
+                    done
+
+                    echo "Production release failed health check"
+                    docker logs node-express-production
+                    exit 1
+                '''
+            }
+        }
     }
 }
