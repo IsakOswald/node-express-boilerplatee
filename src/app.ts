@@ -10,9 +10,11 @@ import { errorHandler } from "@/middlewares/error_handler.middleware";
 import { notFoundHandler } from "@/middlewares/not_found_handler.middleware";
 import { rateLimiter } from "@/middlewares/rate_limit.middleware";
 import { requestId } from "@/middlewares/request_id.middleware";
+import { metricsMiddleware } from "@/middlewares/metrics.middleware";
 
 import { envs } from "@/configs/env.config";
 import { logger } from "@/configs/logger.config";
+import { register } from "@/configs/metrics.config";
 
 const app: express.Application = express();
 
@@ -21,14 +23,23 @@ app.disable("x-powered-by");
 app.use(requestId);
 app.use(rateLimiter);
 app.use(helmet() as RequestHandler);
+
 app.use(
   pinoHttp({
     logger,
     genReqId: (req) => (req as express.Request).id,
   }) as unknown as RequestHandler
 );
+
 app.use(express.json({ limit: envs.BODY_LIMIT }));
 app.use(express.urlencoded({ extended: false, limit: envs.BODY_LIMIT }));
+
+app.use(metricsMiddleware);
+
+app.get("/metrics", async (_req, res) => {
+  res.set("Content-Type", register.contentType);
+  res.end(await register.metrics());
+});
 
 app.use("/api/v1", routes);
 
