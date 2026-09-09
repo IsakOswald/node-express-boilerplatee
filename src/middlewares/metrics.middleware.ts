@@ -1,21 +1,12 @@
 import type { NextFunction, Request, Response } from "express";
 
-import {
-  httpRequestDurationSeconds,
-  httpRequestsTotal,
-} from "@/configs/metrics.config";
+import { httpRequestDurationSeconds, httpRequestsTotal } from "@/configs/metrics.config";
 
-export const metricsMiddleware = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+export const metricsMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const end = httpRequestDurationSeconds.startTimer();
 
   res.on("finish", () => {
-    const route = req.route?.path
-      ? `${req.baseUrl}${req.route.path}`
-      : req.path;
+    const route = req.path;
 
     const labels = {
       method: req.method,
