@@ -17,7 +17,15 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh 'npm test'
+                sh 'npm run test:coverage'
+            }
+        }
+
+        stage('Code Quality') {
+            steps {
+                sh 'npm run lint'
+                sh 'npm run type-check'
+                sh 'npm run format:check'
             }
         }
     }
