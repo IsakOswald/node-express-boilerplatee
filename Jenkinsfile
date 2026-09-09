@@ -51,9 +51,21 @@ pipeline {
 
         stage('Security') {
             steps {
-                sh 'npm audit --audit-level=high || true'
-                sh 'docker build -f Dockerfile.production -t node-express-boilerplatee:${BUILD_NUMBER} .'
-                sh 'trivy image --severity HIGH,CRITICAL --exit-code 0 node-express-boilerplatee:${BUILD_NUMBER}'
+                sh 'npm audit --omit=dev --audit-level=high'
+
+                sh '''
+                    docker build \
+                      -f Dockerfile.production \
+                      -t node-express-boilerplatee:${BUILD_NUMBER} .
+                '''
+
+                sh '''
+                    trivy image \
+                      --scanners vuln \
+                      --severity HIGH,CRITICAL \
+                      --exit-code 1 \
+                      node-express-boilerplatee:${BUILD_NUMBER}
+                '''
             }
         }
     }
