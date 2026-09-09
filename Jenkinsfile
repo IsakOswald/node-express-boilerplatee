@@ -77,6 +77,7 @@ pipeline {
                     docker run -d \
                     --name node-express-staging \
                     --env-file .env.example \
+                    -e NODE_ENV=production \
                     -p 5051:5050 \
                     node-express-boilerplatee:${BUILD_NUMBER}
                 '''
