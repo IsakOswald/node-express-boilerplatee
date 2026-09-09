@@ -68,5 +68,38 @@ pipeline {
                 '''
             }
         }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                    docker rm -f node-express-staging 2>/dev/null || true
+
+                    docker run -d \
+                    --name node-express-staging \
+                    --env-file .env.example \
+                    -p 5051:5050 \
+                    node-express-boilerplatee:${BUILD_NUMBER}
+                '''
+
+                sh '''
+                    echo "Waiting for staging deployment..."
+
+                    for i in 1 2 3 4 5 6 7 8 9 10; do
+                        if curl --fail --silent \
+                        http://localhost:5051/api/v1/health/ready > /dev/null; then
+                            echo "Staging deployment is healthy"
+                            exit 0
+                        fi
+
+                        echo "Attempt $i: service not ready yet"
+                        sleep 3
+                    done
+
+                    echo "Staging deployment failed health check"
+                    docker logs node-express-staging
+                    exit 1
+                '''
+            }
+        }
     }
 }
