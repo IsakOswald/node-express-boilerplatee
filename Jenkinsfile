@@ -140,5 +140,24 @@ pipeline {
                 '''
             }
         }
+
+        stage('Monitoring') {
+            steps {
+                sh '''
+                    echo "Checking production metrics endpoint..."
+
+                    curl --fail --silent \
+                    http://localhost:5052/metrics > /dev/null
+
+                    echo "Checking Prometheus target status..."
+
+                    curl --fail --silent \
+                    "http://localhost:9090/api/v1/query?query=up%7Bjob%3D%22node-express-production%22%7D" \
+                    | grep '"value":\\[[^]]*,"1"\\]'
+
+                    echo "Production monitoring is active"
+                '''
+            }
+        }
     }
 }
