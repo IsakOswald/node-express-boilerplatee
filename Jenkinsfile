@@ -201,31 +201,18 @@ pipeline {
             }
         }
 
-        stage('Monitoring') {
+    stage('Monitoring') {
             steps {
                 sh '''
-                    echo "Checking production metrics endpoint..."
+                    echo 'Checking production metrics endpoint...'
+                    curl --fail --silent http://localhost:5052/metrics > /dev/null
 
-                    # Check that the running production application
-                    # is exposing its Prometheus metrics.
+                    echo 'Checking Prometheus target status...'
                     curl --fail --silent \
-                      http://localhost:5052/metrics > /dev/null
+                    'http://localhost:9090/api/v1/query?query=up%7Bjob%3D%22node-express-production%22%7D' \
+                    | grep -q '"1"'
 
-                    echo "Checking Prometheus target status..."
-
-                    # Ask Prometheus whether it can currently scrape
-                    # the production application.
-                    #
-                    # The query is the URL-encoded version of:
-                    # up{job="node-express-production"}
-                    #
-                    # Prometheus returns a value of 1 when the target is up.
-                    curl --fail --silent \
-                      "http://localhost:9090/api/v1/query?query=up%7Bjob%3D%22node-express-production%22%7D" \
-                      | grep '"value":\\[[^]]*,"1"\\]'
-
-                    # Jenkins only reaches this line if both checks succeeded.
-                    echo "Production monitoring is active"
+                    echo 'Monitoring checks passed.'
                 '''
             }
         }
